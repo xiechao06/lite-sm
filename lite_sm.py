@@ -36,18 +36,46 @@ class InvalidAction(Exception):
 class State(object):
 
     status = None
-    
-    def __init__(self, sm, rule_map, actors=[]):
-        self.actors = actors
-        self.rule_map = rule_map
-        self.sm = sm
-        if not hasattr(self.sm, "status_map"):
-            self.sm.status_map = {}
-        self.sm.status_map[self.status] = self
 
+    def __init__(self, sm, actors=[]):
+        self.actors = actors
+        self.sm = sm
+    
     @property
     def last_status(self):
         return self.sm.last_state.status
+    
+    @property
+    def last_action(self):
+        return self.sm.last_action
+
+    @property
+    def obj(self):
+        return self.sm.obj
+
+    @property
+    def bundel(self):
+        return self.sm.bundle
+
+    def next(self, input):
+        raise NotImplementedError()
+
+    def get_avail_actions(self, ignore_perm):
+        raise NotImplementedError()
+
+    def side_effect(self):
+        pass
+
+class RuleSpecState(State):
+
+    status = None
+    
+    def __init__(self, sm, rule_map, actors=[]):
+        super(RuleSpecState, self).__init__(sm, actors)
+        self.rule_map = rule_map
+        if not hasattr(self.sm, "status_map"):
+            self.sm.status_map = {}
+        self.sm.status_map[self.status] = self
 
     def next(self, input):
         next_status, perm = self.rule_map[input]
@@ -64,21 +92,20 @@ class State(object):
             ret = [action for action in ret if self.rule_map["action"][1].can()]
         return ret 
 
-    def side_effect(self):
-        pass
-
 class StateMachine(object):
-    def __init__(self, obj=None, logger=None):
+    def __init__(self, obj=None, bundle=None, logger=None):
         self.obj = obj
+        self.bundle = bundle
         self.logger = logger
 
     def set_init_state(self, init_state):
         self.current_state = init_state
 
     def next(self, action, actor=None, *args, **kwargs):
-        last_state = self.current_state
-        self.current_state = last_state.next(action)
-        self.current_state.last_state = last_state
+        self.last_state = self.current_state
+        self.last_action = action
+        self.current_state = self.last_state.next(action)
+        self.current_state.last_state = self.last_state
         self.current_state.action = action
         self.current_state.sm = self
         self.current_state.side_effect(*args, **kwargs)
@@ -90,9 +117,9 @@ class StateMachine(object):
         # log
         if self.logger:
             msg = repr(self.obj)+"'s " if self.obj else ""
-            msg += "state has changed from %s to %s " % (repr(last_state), repr(self.current_state))
+            msg += "state has changed from %s to %s " % (repr(self.last_state), repr(self.current_state))
             msg += "by " + repr(actor) 
-            self.logger.info(msg, extra={"obj": self.obj, "actor": actor, "last_state": last_state, "current_state": self.current_state, "action": action})
+            self.logger.info(msg, extra={"obj": self.obj, "actor": actor, "last_state": self.last_state, "current_state": self.current_state, "action": action})
     
     def get_avail_actions(self, ignore_perm=True):
         return self.current_state.get_avail_actions(ignore_perm)
@@ -129,9 +156,9 @@ if __name__ == "__main__":
     green_status = 1
     yello_status = 2
 
-    sm = StateMachine(tl, logger)
+    sm = StateMachine(obj=tl, logger=logger)
     
-    class RedState(State):
+    class RedState(RuleSpecState):
         status = red_status
 
         def side_effect(self, *args, **kwargs):
@@ -140,7 +167,7 @@ if __name__ == "__main__":
         def __repr__(self):
             return "<RedState>"
 
-    class GreenState(State):
+    class GreenState(RuleSpecState):
         status = green_status
 
         def side_effect(self, *args, **kwargs):
@@ -149,7 +176,7 @@ if __name__ == "__main__":
         def __repr__(self):
             return "<GreenState>"
 
-    class YellowState(State):
+    class YellowState(RuleSpecState):
         status = yello_status
 
         def side_effect(self, *args, **kwargs):
