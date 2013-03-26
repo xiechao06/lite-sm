@@ -98,7 +98,7 @@ class StateMachine(object):
         self.bundle = bundle
         self.logger = logger
 
-    def set_init_state(self, init_state):
+    def set_current_state(self, init_state):
         self.current_state = init_state
 
     def next(self, action, actor=None, *args, **kwargs):
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     red_state = RedState(sm, {"turn_green": (green_status, None)})
     green_state = GreenState(sm, {"turn_yellow": (yello_status, None)})
     yellow_state = YellowState(sm, {"turn_red": (red_status, None)})
-    sm.set_init_state(green_state)
+    sm.set_current_state(green_state)
 
     print "available actions -- " + ",".join(sm.get_avail_actions())
     print "turn yellow"
