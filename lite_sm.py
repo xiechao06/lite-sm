@@ -40,6 +40,9 @@ class State(object):
     def __init__(self, sm, actors=[]):
         self.actors = actors
         self.sm = sm
+        if not hasattr(self.sm, "status_map"):
+            self.sm.status_map = {}
+        self.sm.status_map[self.status] = self
     
     @property
     def last_status(self):
@@ -73,9 +76,6 @@ class RuleSpecState(State):
     def __init__(self, sm, rule_map, actors=[]):
         super(RuleSpecState, self).__init__(sm, actors)
         self.rule_map = rule_map
-        if not hasattr(self.sm, "status_map"):
-            self.sm.status_map = {}
-        self.sm.status_map[self.status] = self
 
     def next(self, input):
         next_status, perm = self.rule_map[input]
