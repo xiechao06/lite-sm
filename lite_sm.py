@@ -116,10 +116,13 @@ class StateMachine(object):
 
         # log
         if self.logger:
-            msg = repr(self.obj)+"'s " if self.obj else ""
-            msg += "state has changed from %s to %s " % (repr(self.last_state), repr(self.current_state))
-            msg += "by " + repr(actor) 
-            self.logger.info(msg, extra={"obj": self.obj, "actor": actor, "last_state": self.last_state, "current_state": self.current_state, "action": action})
+            self.do_log(action, actor)
+
+    def do_log(self, action, actor):
+        msg = unicode(actor) + ' performed action "' + unicode(action) + '" '
+        msg += unicode(self.obj)+"'s " if self.obj else ""
+        msg += "state has changed from %s to %s " % (unicode(self.last_state), unicode(self.current_state))
+        self.logger.info(msg)
     
     def get_avail_actions(self, ignore_perm=True):
         return self.current_state.get_avail_actions(ignore_perm)
