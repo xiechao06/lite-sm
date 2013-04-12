@@ -66,7 +66,7 @@ class State(object):
     def get_avail_actions(self, ignore_perm):
         raise NotImplementedError()
 
-    def side_effect(self):
+    def side_effect(self, *args, **kwargs):
         pass
 
 class RuleSpecState(State):
