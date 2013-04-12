@@ -108,11 +108,7 @@ class StateMachine(object):
         self.current_state.last_state = self.last_state
         self.current_state.action = action
         self.current_state.sm = self
-        self.current_state.side_effect(*args, **kwargs)
-
-        # notify the actors
-        for actor_ in self.current_state.actors:
-            self.sm.notify_next_actor(actor_)
+        self.current_state.side_effect(*args, actor=actor, **kwargs)
 
         # log
         if self.logger:
